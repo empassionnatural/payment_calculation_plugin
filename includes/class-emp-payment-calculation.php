@@ -70,7 +70,7 @@ class Emp_Payment_Calculation {
 		if ( defined( 'EMP_PAYMENT_CALCULATION_VERSION' ) ) {
 			$this->version = EMP_PAYMENT_CALCULATION_VERSION;
 		} else {
-			$this->version = '1.0.0';
+			$this->version = '2.2.0';
 		}
 		$this->plugin_name = 'emp-payment-calculation';
 
@@ -78,6 +78,7 @@ class Emp_Payment_Calculation {
 		$this->set_locale();
 		$this->define_admin_hooks();
 		$this->define_public_hooks();
+
 
 	}
 
@@ -157,6 +158,22 @@ class Emp_Payment_Calculation {
 		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_styles' );
 		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_scripts' );
 
+		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_ajax_scripts' );
+
+//		$this->loader->add_action( 'init', $plugin_admin, 'enqueue_ajax_scripts' );
+		$this->loader->add_action( 'wp_ajax_get_wc_order_data', $plugin_admin, 'get_wc_order_data');
+		$this->loader->add_action( 'wp_ajax_nopriv_get_wc_order_data', $plugin_admin, 'get_wc_order_data');
+
+		// Add menu item
+		$this->loader->add_action( 'admin_menu', $plugin_admin, 'add_plugin_admin_menu' );
+		//save/update options
+		$this->loader->add_action( 'admin_init', $plugin_admin, 'options_update');
+
+		// Add Settings link to the plugin
+		$plugin_basename = plugin_basename( plugin_dir_path( __DIR__ ) . $this->plugin_name . '.php' );
+		$this->loader->add_filter( 'plugin_action_links_' . $plugin_basename, $plugin_admin, 'add_action_links' );
+
+
 	}
 
 	/**
@@ -214,5 +231,7 @@ class Emp_Payment_Calculation {
 	public function get_version() {
 		return $this->version;
 	}
+
+
 
 }
