@@ -101,7 +101,7 @@ class Emp_Payment_Calculation_Admin {
 
 		wp_enqueue_script( 'empdev-datepicker-js', 'https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js' );
 
-		wp_enqueue_script( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'js/emp-payment-calculation-admin.js', array( 'jquery', 'empdev-angular-js', 'empdev-moment-js', 'empdev-datepicker-js' ), '1.1.8', false );
+		wp_enqueue_script( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'js/emp-payment-calculation-admin.js', array( 'jquery', 'empdev-angular-js', 'empdev-moment-js', 'empdev-datepicker-js' ), '3.0.9', false );
 
 		//		$dataToBePassed = array(
 //			'home'            => $this->plugin_name,
@@ -200,65 +200,63 @@ class Emp_Payment_Calculation_Admin {
 		global $post, $product;
 		// Get latest 3 orders.
 		$billing_city = $_GET['city'];
-		$return_response = array();
+		$date_start = $_REQUEST['date_start'];
+		$date_end = $_REQUEST['date_end'];
 
-	if ( wp_verify_nonce( $_REQUEST['nonce'], "empdev_payment_calculation_nonce")) {
+		if ( !wp_verify_nonce( $_REQUEST['nonce'], "empdev_payment_calculation_nonce")) {
 
-		$return_response = array("error" => "Unverified Nonce");
-		$return_response = json_encode( $return_response );
-		echo $return_response;
+			$return_response = array("error" => "Unverified Nonce");
+			$return_response = json_encode( $return_response );
+			echo $return_response;
 
-		wp_die();
-	}
-
-		$args = array(
-//			'status' => 'completed',
-//			'limit'=> 10,
-//			'billing_city' => (isset($billing_city)) ? $billing_city : 'QLD',
-			'order' => 'ASC',
-			'limit'=> -1,
-			'date_paid' => '2018-03-14...2018-04-14',
-		);
-
-		$orders = wc_get_orders( $args );
-		//$orders_by_id = wc_get_order( 37102 );
-
-		$orders_summary = array();
-
-		foreach ( $orders as $order ) {
-
-			$orders_summary[] = array(
-				'order_id'        => $order->get_id(),
-				'payment_method'  => $order->get_payment_method(),
-				'date_paid'       => wc_format_datetime( $order->get_date_paid() ),
-				'billing_address' => $order->get_address( 'billing' ),
-				'state'           => $order->get_address( 'billing' )['state'],
-				'discount_total' => $order->get_total_discount(),
-				'sub_total' => $order->get_subtotal(),
-				'total'     => $order->get_total(),
-				'currency'  => $order->get_currency(),
-				'value_html'      => array(
-					'discount_total_html' => wc_price( $order->get_total_discount(), array( 'currency' => $order->get_currency() ) ),
-					'sub_total_html'      => wc_price( $order->get_subtotal(), array( 'currency' => $order->get_currency() ) ),
-					'total_html'          => wc_price( $order->get_total(), array( 'currency' => $order->get_currency() ) ),
-				),
+			wp_die();
+		}
+		else{
+			$args = array(
+	//			'status' => 'completed',
+	//			'limit'=> 10,
+//				'date_paid' => '2018-03-14...2018-04-14',
+	//			'billing_city' => (isset($billing_city)) ? $billing_city : 'QLD',
+				'order' => 'ASC',
+				'limit'=> -1,
+				'date_paid' => $date_start.'...'.$date_end,
 
 			);
+
+			$orders = wc_get_orders( $args );
+			//$orders_by_id = wc_get_order( 37102 );
+
+			//$orders_summary = array( "request_data" => array( $date_start, $date_end ) );
+
+			foreach ( $orders as $order ) {
+
+				$orders_summary[] = array(
+					'order_id'        => $order->get_id(),
+					'payment_method'  => $order->get_payment_method(),
+					'date_paid'       => wc_format_datetime( $order->get_date_paid() ),
+					'billing_address' => $order->get_address( 'billing' ),
+					'state'           => $order->get_address( 'billing' )['state'],
+					'discount_total'  => $order->get_total_discount(),
+					'sub_total'       => $order->get_subtotal(),
+					'total'           => $order->get_total(),
+					'revenue'         => $this->empdev_payment_processor_deduction( $order->get_total() ),
+					'currency'        => $order->get_currency(),
+					'value_html'      => array(
+						'discount_total_html' => wc_price( $order->get_total_discount(), array( 'currency' => $order->get_currency() ) ),
+						'sub_total_html'      => wc_price( $order->get_subtotal(), array( 'currency' => $order->get_currency() ) ),
+						'total_html'          => wc_price( $order->get_total(), array( 'currency' => $order->get_currency() ) ),
+					),
+
+				);
+			}
+
+			$orders_summary = json_encode( $orders_summary );
+			//header('Content-Type: application/json');
+			echo $orders_summary;
+
+			wp_die();
 		}
 
-		$orders_summary = json_encode( $orders_summary );
-		header('Content-Type: application/json');
-		echo $orders_summary;
-
-		wp_die();
-
-		// Check if action was fired via Ajax call. If yes, JS code will be triggered, else the user is redirected to the post page
-		if(!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') {
-
-		}
-		else {
-			header("Location: ".$_SERVER["HTTP_REFERER"]);
-		}
 	}
 
 
@@ -270,6 +268,25 @@ class Emp_Payment_Calculation_Admin {
 	 */
 	public function options_update() {
 		register_setting( $this->plugin_name, $this->plugin_name );
+	}
+
+	/**
+	 *  Calculate state distributor revenue from each order
+	 *
+	 *
+	 * @since    1.0.0
+	 *
+	 * @param int $total_amount The total amount for an order purchased by a customer.
+	 *
+	 * @return int $revenue Sales income for a state distributor in each order.
+	 */
+	private function empdev_payment_processor_deduction($total_amount ){
+		//$gateway = 'paypal';
+		$gateway_charge = 2.6;
+		$total_charge = $total_amount * ( $gateway_charge / 100 );
+		$revenue = $total_amount - $total_charge;
+		return $revenue;
+
 	}
 
 }
