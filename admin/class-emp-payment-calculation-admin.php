@@ -78,7 +78,7 @@ class Emp_Payment_Calculation_Admin {
 		 * class.
 		 */
 
-		wp_enqueue_style( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'css/emp-payment-calculation-admin.css', array(), $this->version, 'all' );
+		wp_enqueue_style( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'css/emp-payment-calculation-admin.css', array(), '1.1.1', 'all' );
 
 		wp_enqueue_style( 'bootstrap-css-v4', plugin_dir_url( __FILE__ ) . 'assets/bootstrap/css/bootstrap.css', array(), $this->version, 'all' );
 
@@ -97,11 +97,13 @@ class Emp_Payment_Calculation_Admin {
 		wp_enqueue_script( 'jquery' );
 		wp_enqueue_script( 'empdev-angular-js', 'https://ajax.googleapis.com/ajax/libs/angularjs/1.7.8/angular.min.js' );
 
+        wp_enqueue_script( 'empdev-pagination-js', plugin_dir_url( __FILE__ ) . 'assets/dirPagination.js' );
+
 		wp_enqueue_script( 'empdev-moment-js', 'https://cdn.jsdelivr.net/momentjs/latest/moment.min.js' );
 
 		wp_enqueue_script( 'empdev-datepicker-js', 'https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js' );
-
-		wp_enqueue_script( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'js/emp-payment-calculation-admin.js', array( 'jquery', 'empdev-angular-js', 'empdev-moment-js', 'empdev-datepicker-js' ), '3.0.9', false );
+        //3.1.9
+		wp_enqueue_script( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'js/emp-payment-calculation-admin.js', array( 'jquery', 'empdev-angular-js', 'empdev-pagination-js', 'empdev-moment-js', 'empdev-datepicker-js' ), '16.5.6', false );
 
 		//		$dataToBePassed = array(
 //			'home'            => $this->plugin_name,
@@ -202,6 +204,7 @@ class Emp_Payment_Calculation_Admin {
 		$billing_city = $_GET['city'];
 		$date_start = $_REQUEST['date_start'];
 		$date_end = $_REQUEST['date_end'];
+        $orders_summary = [];
 
 		if ( !wp_verify_nonce( $_REQUEST['nonce'], "empdev_payment_calculation_nonce")) {
 
@@ -224,37 +227,42 @@ class Emp_Payment_Calculation_Admin {
 			);
 
 			$orders = wc_get_orders( $args );
-			//$orders_by_id = wc_get_order( 37102 );
 
-			//$orders_summary = array( "request_data" => array( $date_start, $date_end ) );
+			if( count($orders) > 0 ){
+                //$orders_by_id = wc_get_order( 37102 );
 
-			foreach ( $orders as $order ) {
+                //$orders_summary = array( "request_data" => array( $date_start, $date_end ) );
 
-				$orders_summary[] = array(
-					'order_id'        => $order->get_id(),
-					'payment_method'  => $order->get_payment_method(),
-					'date_paid'       => wc_format_datetime( $order->get_date_paid() ),
-					'billing_address' => $order->get_address( 'billing' ),
-					'state'           => $order->get_address( 'billing' )['state'],
-					'discount_total'  => $order->get_total_discount(),
-					'sub_total'       => $order->get_subtotal(),
-					'total'           => $order->get_total(),
-					'revenue'         => $this->empdev_payment_processor_deduction( $order->get_total() ),
-					'currency'        => $order->get_currency(),
-					'value_html'      => array(
-						'discount_total_html' => wc_price( $order->get_total_discount(), array( 'currency' => $order->get_currency() ) ),
-						'sub_total_html'      => wc_price( $order->get_subtotal(), array( 'currency' => $order->get_currency() ) ),
-						'total_html'          => wc_price( $order->get_total(), array( 'currency' => $order->get_currency() ) ),
-					),
+                foreach ( $orders as $order ) {
+                    $payment_method = $order->get_payment_method();
+                    $revenue = $this->empdev_payment_processor_deduction( $order->get_total(), $payment_method );
+                    $orders_summary[] = array(
+                        'order_id'        => $order->get_id(),
+                        'payment_method'  => $payment_method,
+                        'state'           => $order->get_address( 'billing' )['state'],
+                        'total'           => (float) $order->get_total(),
+                        'charges'         => (float) $order->get_total() - $revenue,
+                        'revenue'         => (float) $revenue,
+//                        'date_paid'       => wc_format_datetime( $order->get_date_paid() ),
+//                        'billing_address' => $order->get_address( 'billing' ),
+//                        'discount_total'  => $order->get_total_discount(),
+//                        'sub_total'       => $order->get_subtotal(),
+//                        'currency'        => $order->get_currency(),
+//                        'value_html'      => array(
+//                            'discount_total_html' => wc_price( $order->get_total_discount(), array( 'currency' => $order->get_currency() ) ),
+//                            'sub_total_html'      => wc_price( $order->get_subtotal(), array( 'currency' => $order->get_currency() ) ),
+//                            'total_html'          => wc_price( $order->get_total(), array( 'currency' => $order->get_currency() ) ),
+//                        ),
 
-				);
-			}
+                    );
+                }
 
-			$orders_summary = json_encode( $orders_summary );
-			//header('Content-Type: application/json');
-			echo $orders_summary;
+            }
 
-			wp_die();
+            $orders_summary = json_encode( $orders_summary );
+            //header('Content-Type: application/json');
+            echo $orders_summary;
+            wp_die();
 		}
 
 	}
@@ -280,11 +288,42 @@ class Emp_Payment_Calculation_Admin {
 	 *
 	 * @return int $revenue Sales income for a state distributor in each order.
 	 */
-	private function empdev_payment_processor_deduction($total_amount ){
+	private function empdev_payment_processor_deduction($total_amount, $payment_gateway ){
 		//$gateway = 'paypal';
-		$gateway_charge = 2.6;
+        $options = get_option($this->plugin_name);
+        $gateway_charge_paypal = $options['gateway_charge_paypal'];
+        $gateway_charge_stripe = $options['gateway_charge_stripe'];
+        $gateway_charge_afterpay = $options['gateway_charge_afterpay'];
+        $gateway_charge_square = $options['gateway_charge_square'];
+        $gateway_charge_zip = $options['gateway_charge_zip'];
+        //$payment_method = array( 'paypal', 'stripe', 'square', 'afterpay', 'zipmoney' );
+
+        switch ($payment_gateway){
+            case 'paypal':
+                $payment_charge = $gateway_charge_paypal;
+                break;
+            case 'stripe':
+                $payment_charge = $gateway_charge_stripe;
+                break;
+            case 'afterpay':
+                $payment_charge = $gateway_charge_afterpay;
+                break;
+            case 'square':
+                $payment_charge = $gateway_charge_square;
+                break;
+            case 'zipmoney':
+                $payment_charge = $gateway_charge_zip;
+                break;
+            default:
+                $payment_charge = 0.00;
+                break;
+        }
+
+		//gateway_charge = 2.6;
+        $gateway_charge = (float) $payment_charge;
 		$total_charge = $total_amount * ( $gateway_charge / 100 );
 		$revenue = $total_amount - $total_charge;
+		$revenue =  number_format( (float) $revenue, 2, '.', '' );
 		return $revenue;
 
 	}

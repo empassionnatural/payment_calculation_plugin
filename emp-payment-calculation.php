@@ -89,74 +89,10 @@ function add_backend_ajax_javascript_file(){
 
 	wp_enqueue_script( 'empdev-datepicker-js', 'https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js' );
 
-	wp_enqueue_script( 'emp-payment-calculation', plugin_dir_url( __FILE__ ) . 'js/emp-payment-calculation-admin.js', array( 'jquery', 'empdev-moment-js', 'empdev-datepicker-js' ), '2.1.1', false );
+	wp_enqueue_script( 'emp-payment-calculation', plugin_dir_url( __FILE__ ) . 'js/emp-payment-calculation-admin.js', array( 'jquery', 'empdev-moment-js', 'empdev-datepicker-js' ), '2.1.2', false );
 
 
 	wp_localize_script( 'emp-payment-calculation', 'empdevajax',  array( 'ajaxurl' => admin_url( 'admin-ajax.php'  ) ) );
-
-}
-
-
-
-//add_action("wp_ajax_get_wc_order_data", "get_wc_order_data_handler" );
-//add_action("wp_ajax_nopriv_get_wc_order_data", "get_wc_order_data_handler" );
-
-function get_wc_order_data_handler(){
-	global $post, $product;
-	// Get latest 3 orders.
-	$billing_city = $_GET['city'];
-
-//	if ( wp_verify_nonce( $_REQUEST['nonce'], "empdev_payment_calculation_nonce")) {
-//		exit("Unverified Nonce");
-//	}
-
-	$args = array(
-//			'status' => 'completed',
-//			'limit'=> 10,
-//			'billing_city' => (isset($billing_city)) ? $billing_city : 'QLD',
-		'date_paid' => '2018-05-14',
-	);
-
-	$orders = wc_get_orders( $args );
-	//$orders_by_id = wc_get_order( 37102 );
-
-	$orders_summary = array();
-
-	foreach ( $orders as $order ) {
-
-		$orders_summary[] = array(
-			'order_id'        => $order->get_id(),
-			'payment_method'  => $order->get_payment_method(),
-			'date_paid'       => wc_format_datetime( $order->get_date_paid() ),
-			'billing_address' => $order->get_address( 'billing' ),
-			'state'           => $order->get_address( 'billing' )['state'],
-			'discount_total' => $order->get_total_discount(),
-			'sub_total' => $order->get_subtotal(),
-			'total'     => $order->get_total(),
-			'currency'  => $order->get_currency(),
-			'value_html'      => array(
-				'discount_total_html' => wc_price( $order->get_total_discount(), array( 'currency' => $order->get_currency() ) ),
-				'sub_total_html'      => wc_price( $order->get_subtotal(), array( 'currency' => $order->get_currency() ) ),
-				'total_html'          => wc_price( $order->get_total(), array( 'currency' => $order->get_currency() ) ),
-			),
-
-		);
-	}
-
-	$orders_summary = json_encode( $orders_summary );
-	header('Content-Type: application/json');
-	echo $orders_summary;
-
-	wp_die();
-
-	// Check if action was fired via Ajax call. If yes, JS code will be triggered, else the user is redirected to the post page
-	if(!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') {
-
-	}
-	else {
-		header("Location: ".$_SERVER["HTTP_REFERER"]);
-	}
-
 
 }
 

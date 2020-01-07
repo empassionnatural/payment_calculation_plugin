@@ -37,41 +37,56 @@
                         <h2>Orders Summary</h2>
 
                         <div ng-app="paymentCalculationApp" ng-controller="paymentController">
-                            <input type="text" id="testHttp" ng-model="nonce" />
-                            <input type="text" id="reportrange" ng-change="dateRangeChange()" ng-model="dateRange" data-dateRangeStart="" date-dateRangeEnd="" ng-focus="setFocus($event)" ng-blur="cancelFocus($event)" />
-                            <button ng-click="wcLoadOrders()">Generate</button>
-                            
+
+                            <form class="form-inline">
+                                <div class="form-group col-md-4 pl-0">
+                                    <input class="w-100 form-control" type="text" id="reportrange" ng-model="dateRange" data-dateRangeStart="" date-dateRangeEnd="" />
+                                </div>
+                                <div class="form-group col-md-1 pl-0">
+                                    <button id="wcGenerateBtn" type="button" class="btn btn-primary" ng-click="wcLoadOrders()">Generate</button>
+                                </div>
+                                <div class="form-group col-md-2 pl-0">
+                                    <button type="button" class="btn btn-light ml-2" ng-click="exportJsonToCsv()">Export CSV</button>
+                                </div>
+                            </form>
+                            <div class="col-md-12 mt-2 mb-2 pl-0">
+                                <div ng-repeat="item in defaultStates" class="form-check form-check-inline">
+                                    <input class="form-check-input" id="state-{{ item.state }}" type="checkbox" ng-model="item.selected"
+                                           ng-true-value="true" ng-change="selectedStates(item)" ng-false-value=""/>
+                                    <label class="form-check-label" for="state-{{ item.state }}">{{ item.state }}</label>
+                                </div>
+                            </div>
+
                             <table class="table table-striped">
                                 <thead>
                                 <tr>
-                                    <th scope="col">Order ID</th>
-                                    <th scope="col">State</th>
-                                    <th scope="col">Payment Method</th>
-                                    <th scope="col">Total</th>
+                                    <th scope="col" ng-click="sort('order_id')">Order ID</th>
+                                    <th scope="col" ng-click="sort('state')">State</th>
+                                    <th scope="col" ng-click="sort('payment_method')">Payment Method</th>
+                                    <th scope="col" ng-click="sort('total')">Sales</th>
+                                    <th scope="col" ng-click="sort('charges')">Charges</th>
+                                    <th scope="col" ng-click="sort('revenue')">Distributor Revenue</th>
                                 </tr>
                                 </thead>
                                 <tbody>
-                                <tr ng-repeat="order in ordersSummary">
+                                <tr ng-repeat="order in ordersSummary | orderBy:sortKey:reverse | filter:filterStates():true  ">
                                     <th scope="row">{{order.order_id}}</th>
                                     <td>{{order.state}}</td>
-                                    <td>{{order.payment_method}}</td>
+                                    <td>{{order.payment_method | uppercase}}</td>
                                     <td>{{order.total}}</td>
+                                    <td>{{order.charges}}</td>
+                                    <td>{{order.revenue}}</td>
                                 </tr>
 
                                 </tbody>
                             </table>
+                            <dir-pagination-controls
+                                    max-size="5"
+                                    direction-links="true"
+                                    boundary-links="true" >
+                            </dir-pagination-controls>
 		                    <?php $nonce = wp_create_nonce("empdev_payment_calculation_nonce"); ?>
                             <input type="hidden" id="wc-nonce" data-nonce="<?php echo $nonce; ?>" />
-
-                            <div id="reportrange3" style="background: #fff; cursor: pointer; padding: 5px 10px; border: 1px solid #ccc; width: 100%">
-                                <i class="fa fa-calendar"></i>&nbsp;
-                                <span></span> <i class="fa fa-caret-down"></i>
-                            </div>
-                            <br>
-                            <input type="hidden" id="reportrange2" class="form-control">
-                            {{nonce}}
-                            {{currentElement}}
-                            {{dateRange}}
 
                             <!--{{ordersSummary | json}}-->
 		                    <?php /*var_dump($orders); */?>
