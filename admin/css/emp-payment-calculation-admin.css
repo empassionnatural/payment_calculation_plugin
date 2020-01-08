@@ -14,3 +14,16 @@
     background-color: #fff;
     border: 1px solid #dee2e6;
 }
+#orders-data-table{
+    --table-width: 100%;
+}
+#orders-data-table tbody{
+    display:block;
+    max-height:500px;
+    overflow-y:auto;
+}
+#orders-data-table thead, #orders-data-table tbody tr {
+    display:table;
+    width: var(--table-width);
+    table-layout:fixed;
+}

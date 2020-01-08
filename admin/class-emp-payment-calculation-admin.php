@@ -78,7 +78,7 @@ class Emp_Payment_Calculation_Admin {
 		 * class.
 		 */
 
-		wp_enqueue_style( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'css/emp-payment-calculation-admin.css', array(), '1.1.1', 'all' );
+		wp_enqueue_style( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'css/emp-payment-calculation-admin.css', array(), '2.1.0', 'all' );
 
 		wp_enqueue_style( 'bootstrap-css-v4', plugin_dir_url( __FILE__ ) . 'assets/bootstrap/css/bootstrap.css', array(), $this->version, 'all' );
 
@@ -103,7 +103,7 @@ class Emp_Payment_Calculation_Admin {
 
 		wp_enqueue_script( 'empdev-datepicker-js', 'https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js' );
         //3.1.9
-		wp_enqueue_script( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'js/emp-payment-calculation-admin.js', array( 'jquery', 'empdev-angular-js', 'empdev-pagination-js', 'empdev-moment-js', 'empdev-datepicker-js' ), '16.5.6', false );
+		wp_enqueue_script( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'js/emp-payment-calculation-admin.js', array( 'jquery', 'empdev-angular-js', 'empdev-pagination-js', 'empdev-moment-js', 'empdev-datepicker-js' ), '16.6.2', false );
 
 		//		$dataToBePassed = array(
 //			'home'            => $this->plugin_name,
@@ -292,37 +292,49 @@ class Emp_Payment_Calculation_Admin {
 		//$gateway = 'paypal';
         $options = get_option($this->plugin_name);
         $gateway_charge_paypal = $options['gateway_charge_paypal'];
+        $gateway_fixed_charge_paypal = $options['gateway_fixed_charge_paypal'];
         $gateway_charge_stripe = $options['gateway_charge_stripe'];
+        $gateway_fixed_charge_stripe = $options['gateway_fixed_charge_stripe'];
         $gateway_charge_afterpay = $options['gateway_charge_afterpay'];
+        $gateway_fixed_charge_afterpay = $options['gateway_fixed_charge_afterpay'];
         $gateway_charge_square = $options['gateway_charge_square'];
-        $gateway_charge_zip = $options['gateway_charge_zip'];
+        $gateway_charge_zipmoney = $options['gateway_charge_zipmoney'];
+        $gateway_fixed_charge_zipmoney = $options['gateway_fixed_charge_zipmoney'];
         //$payment_method = array( 'paypal', 'stripe', 'square', 'afterpay', 'zipmoney' );
 
         switch ($payment_gateway){
             case 'paypal':
                 $payment_charge = $gateway_charge_paypal;
+                $fixed_charge = $gateway_fixed_charge_paypal;
                 break;
             case 'stripe':
                 $payment_charge = $gateway_charge_stripe;
+                $fixed_charge = $gateway_fixed_charge_stripe;
                 break;
             case 'afterpay':
                 $payment_charge = $gateway_charge_afterpay;
+                $fixed_charge = $gateway_fixed_charge_afterpay;
                 break;
             case 'square':
                 $payment_charge = $gateway_charge_square;
+                $fixed_charge = 0.00;
                 break;
             case 'zipmoney':
-                $payment_charge = $gateway_charge_zip;
+                $payment_charge = $gateway_charge_zipmoney;
+                $fixed_charge = $gateway_fixed_charge_zipmoney;
                 break;
             default:
                 $payment_charge = 0.00;
+                $fixed_charge = 0.00;
                 break;
         }
 
 		//gateway_charge = 2.6;
         $gateway_charge = (float) $payment_charge;
+        $gateway_fixed_charge = (float) $fixed_charge;
 		$total_charge = $total_amount * ( $gateway_charge / 100 );
 		$revenue = $total_amount - $total_charge;
+		$revenue = $revenue - $gateway_fixed_charge;
 		$revenue =  number_format( (float) $revenue, 2, '.', '' );
 		return $revenue;
 

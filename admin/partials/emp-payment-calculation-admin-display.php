@@ -34,7 +34,8 @@
                 </ul>
                 <div class="tab-content" id="myTabContent">
                     <div class="tab-pane fade show active" id="orders" role="tabpanel" aria-labelledby="orders-tab">
-                        <h2>Orders Summary</h2>
+                        <br/>
+                        <h3>Orders Summary</h3>
 
                         <div ng-app="paymentCalculationApp" ng-controller="paymentController">
 
@@ -49,27 +50,42 @@
                                     <button type="button" class="btn btn-light ml-2" ng-click="exportJsonToCsv()">Export CSV</button>
                                 </div>
                             </form>
-                            <div class="col-md-12 mt-2 mb-2 pl-0">
-                                <div ng-repeat="item in defaultStates" class="form-check form-check-inline">
-                                    <input class="form-check-input" id="state-{{ item.state }}" type="checkbox" ng-model="item.selected"
-                                           ng-true-value="true" ng-change="selectedStates(item)" ng-false-value=""/>
-                                    <label class="form-check-label" for="state-{{ item.state }}">{{ item.state }}</label>
+
+                            <br/>
+
+                            <div class="form-row">
+                                <div class="col-md-8 mt-2 mb-2 pl-0">
+                                    <div ng-repeat="item in defaultStates" class="form-check form-check-inline">
+                                        <input class="form-check-input" id="state-{{ item.state }}" type="checkbox" ng-model="item.selected"
+                                               ng-true-value="true" ng-change="selectedStates(item)" ng-false-value=""/>
+                                        <label class="form-check-label" for="state-{{ item.state }}">{{ item.state }}</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="input-group mb-3">
+                                        <input type="text" placeholder="Search..." class="form-control" ng-model="searchOrders" />
+                                        <div class="input-group-append">
+                                            <div class="input-group-text"><i class="fa fa-search" aria-hidden="true"></i></div>
+                                        </div>
+                                    </div>
+
                                 </div>
                             </div>
 
-                            <table class="table table-striped">
+
+                            <table id="orders-data-table" class="table table-striped">
                                 <thead>
                                 <tr>
-                                    <th scope="col" ng-click="sort('order_id')">Order ID</th>
-                                    <th scope="col" ng-click="sort('state')">State</th>
-                                    <th scope="col" ng-click="sort('payment_method')">Payment Method</th>
-                                    <th scope="col" ng-click="sort('total')">Sales</th>
-                                    <th scope="col" ng-click="sort('charges')">Charges</th>
-                                    <th scope="col" ng-click="sort('revenue')">Distributor Revenue</th>
+                                    <th scope="col" ng-click="sort('order_id')" ng-class="{reverse: reverse}">Order ID</th>
+                                    <th scope="col" ng-click="sort('state')" ng-class="{reverse: reverse}">State</th>
+                                    <th scope="col" ng-click="sort('payment_method')" ng-class="{reverse: reverse}">Payment Method</th>
+                                    <th scope="col" ng-click="sort('total')" ng-class="{reverse: reverse}">Sales</th>
+                                    <th scope="col" ng-click="sort('charges')" ng-class="{reverse: reverse}">Charges</th>
+                                    <th scope="col" ng-click="sort('revenue')" ng-class="{reverse: reverse}">Distributor Revenue</th>
                                 </tr>
                                 </thead>
                                 <tbody>
-                                <tr ng-repeat="order in ordersSummary | orderBy:sortKey:reverse | filter:filterStates():true  ">
+                                <tr ng-repeat="order in ordersSummary | orderBy:sortKey:reverse | filter:filterStates():true | filter:searchOrders ">
                                     <th scope="row">{{order.order_id}}</th>
                                     <td>{{order.state}}</td>
                                     <td>{{order.payment_method | uppercase}}</td>
@@ -80,6 +96,10 @@
 
                                 </tbody>
                             </table>
+                            <div class="text-center alert alert-light" role="alert">
+                                <span id="default-msg">Select a date and generate!</span>
+                                <span id="loader-msg">loading...</span>
+                            </div>
                             <dir-pagination-controls
                                     max-size="5"
                                     direction-links="true"
@@ -94,8 +114,8 @@
                     </div>
 
                     <div class="tab-pane fade" id="settings" role="tabpanel" aria-labelledby="settings-tab">
-
-                        <h3>Payment Charges</h3>
+                        <br/>
+                        <h3>Payment Gateway Charges</h3>
                         <form method="post" name="emp_payment_calculattion" action="options.php">
 		                    <?php
 		                    $options = get_option($this->plugin_name);
@@ -108,30 +128,106 @@
 		                    do_settings_sections($this->plugin_name);
 
 		                    $gateway_charge_paypal = $options['gateway_charge_paypal'];
-		                    $gateway_charge_stripe = $options['gateway_charge_stripe'];
-		                    $gateway_charge_afterpay = $options['gateway_charge_afterpay'];
-		                    $gateway_charge_square = $options['gateway_charge_square'];
-		                    $gateway_charge_zip = $options['gateway_charge_zip'];
+                            $gateway_fixed_charge_paypal = $options['gateway_fixed_charge_paypal'];
+                            $gateway_charge_stripe = $options['gateway_charge_stripe'];
+                            $gateway_fixed_charge_stripe = $options['gateway_fixed_charge_stripe'];
+                            $gateway_charge_afterpay = $options['gateway_charge_afterpay'];
+                            $gateway_fixed_charge_afterpay = $options['gateway_fixed_charge_afterpay'];
+                            $gateway_charge_square = $options['gateway_charge_square'];
+                            $gateway_charge_zipmoney = $options['gateway_charge_zipmoney'];
+                            $gateway_fixed_charge_zipmoney = $options['gateway_fixed_charge_zipmoney'];
 		                    ?>
                             <div class="form-row">
-                                <div class="col-md-2">
+                                <div class="col-md-5">
                                     <label for="<?php echo $this->plugin_name;?>-options_paypal">Paypal</label>
-                                    <div class="input-group mb-2">
-                                        <div class="input-group-prepend">
-                                            <span class="input-group-text" id="btn_pretext">$</span>
+                                    <div class="form-row">
+                                        <div class="col-md-6">
+                                            <div class="input-group mb-2">
+                                                <div class="input-group-prepend">
+                                                    <span class="input-group-text" id="btn_pretext">$</span>
+                                                </div>
+                                                <input name="<?php echo $this->plugin_name;?>[gateway_charge_paypal]" value="<?php echo $gateway_charge_paypal;?>" id="<?php echo $this->plugin_name;?>-options_paypal" type="text" class="form-control type-number" placeholder="Percent" aria-label="gateway_paypal" aria-describedby="btn_pretext">
+                                            </div>
                                         </div>
-                                        <input name="<?php echo $this->plugin_name;?>[gateway_charge_paypal]" value="<?php echo $gateway_charge_paypal;?>" id="<?php echo $this->plugin_name;?>-options_paypal" type="text" class="form-control type-number" placeholder="Percent" aria-label="gateway_paypal" aria-describedby="btn_pretext">
+                                        <div class="col-md-6">
+                                            <div class="input-group mb-2">
+                                                <div class="input-group-prepend">
+                                                    <span class="input-group-text" id="btn_pretext">+</span>
+                                                </div>
+                                                <input name="<?php echo $this->plugin_name;?>[gateway_fixed_charge_paypal]" value="<?php echo $gateway_fixed_charge_paypal;?>" id="<?php echo $this->plugin_name;?>-options_fixed_paypal" type="text" class="form-control type-number" placeholder="Fixed Charge" aria-label="gateway_fixed_paypal" aria-describedby="btn_pretext">
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-                                <div class="col-md-2">
+                                <div class="col-md-5">
                                     <label for="<?php echo $this->plugin_name;?>-options_stripe"">Stripe</label>
-                                    <div class="input-group mb-2">
-                                        <div class="input-group-prepend">
-                                            <span class="input-group-text" id="btn_pretext2">$</span>
+                                    <div class="form-row">
+                                        <div class="col-md-6">
+                                            <div class="input-group mb-2">
+                                                <div class="input-group-prepend">
+                                                    <span class="input-group-text" id="btn_pretext2">$</span>
+                                                </div>
+                                                <input name="<?php echo $this->plugin_name;?>[gateway_charge_stripe]" value="<?php echo $gateway_charge_stripe;?>" id="<?php echo $this->plugin_name;?>-options_stripe" type="text" class="form-control type-number" placeholder="Percent" aria-label="gateway_stripe" aria-describedby="btn_pretext2">
+                                            </div>
                                         </div>
-                                        <input name="<?php echo $this->plugin_name;?>[gateway_charge_stripe]" value="<?php echo $gateway_charge_stripe;?>" id="<?php echo $this->plugin_name;?>-options_stripe" type="text" class="form-control type-number" placeholder="Percent" aria-label="gateway_stripe" aria-describedby="btn_pretext2">
+                                        <div class="col-md-6">
+                                            <div class="input-group mb-2">
+                                                <div class="input-group-prepend">
+                                                    <span class="input-group-text" id="btn_pretext">+</span>
+                                                </div>
+                                                <input name="<?php echo $this->plugin_name;?>[gateway_fixed_charge_stripe]" value="<?php echo $gateway_fixed_charge_stripe;?>" id="<?php echo $this->plugin_name;?>-options_fixed_stripe" type="text" class="form-control type-number" placeholder="Fixed Charge" aria-label="gateway_fixed_stripe" aria-describedby="btn_pretext">
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="col-md-5">
+                                    <label for="<?php echo $this->plugin_name;?>-options_afterpay">Afterpay</label>
+                                    <div class="form-row">
+                                        <div class="col-md-6">
+                                            <div class="input-group mb-2">
+                                                <div class="input-group-prepend">
+                                                    <span class="input-group-text" id="btn_pretext4">$</span>
+                                                </div>
+                                                <input name="<?php echo $this->plugin_name;?>[gateway_charge_afterpay]" value="<?php echo $gateway_charge_afterpay;?>" id="<?php echo $this->plugin_name;?>-options_afterpay" type="text" class="form-control type-number" placeholder="Percent" aria-label="gateway_afterpay" aria-describedby="btn_pretext4">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="input-group mb-2">
+                                                <div class="input-group-prepend">
+                                                    <span class="input-group-text" id="btn_pretext">+</span>
+                                                </div>
+                                                <input name="<?php echo $this->plugin_name;?>[gateway_fixed_charge_afterpay]" value="<?php echo $gateway_fixed_charge_afterpay;?>" id="<?php echo $this->plugin_name;?>-options_fixed_afterpay" type="text" class="form-control type-number" placeholder="Fixed Charge" aria-label="gateway_fixed_afterpay" aria-describedby="btn_pretext">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                </div>
+                                <div class="col-md-5">
+                                    <label for="<?php echo $this->plugin_name;?>-options_zipmoney">Zip Pay</label>
+                                    <div class="form-row">
+                                        <div class="col-md-6">
+                                            <div class="input-group mb-2">
+                                                <div class="input-group-prepend">
+                                                    <span class="input-group-text" id="btn_pretext5">$</span>
+                                                </div>
+                                                <input name="<?php echo $this->plugin_name;?>[gateway_charge_zipmoney]" value="<?php echo $gateway_charge_zipmoney;?>" id="<?php echo $this->plugin_name;?>-options_zipmoney" type="text" class="form-control type-number" placeholder="Percent" aria-label="gateway_zipmoney" aria-describedby="btn_pretext5">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="input-group mb-2">
+                                                <div class="input-group-prepend">
+                                                    <span class="input-group-text" id="btn_pretext">+</span>
+                                                </div>
+                                                <input name="<?php echo $this->plugin_name;?>[gateway_fixed_charge_zipmoney]" value="<?php echo $gateway_fixed_charge_zipmoney;?>" id="<?php echo $this->plugin_name;?>-options_fixed_zipmoney" type="text" class="form-control type-number" placeholder="Fixed Charge" aria-label="gateway_fixed_zipmoney" aria-describedby="btn_pretext">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                </div>
+                            </div>
+                            <div class="form-row">
                                 <div class="col-md-2">
                                     <label for="<?php echo $this->plugin_name;?>-options_square">Square</label>
                                     <div class="input-group mb-2">
@@ -143,26 +239,7 @@
                                 </div>
 
                             </div>
-                            <div class="form-row">
-                                <div class="col-md-2">
-                                    <label for="<?php echo $this->plugin_name;?>-options_afterpay">Afterpay</label>
-                                    <div class="input-group mb-2">
-                                        <div class="input-group-prepend">
-                                            <span class="input-group-text" id="btn_pretext4">$</span>
-                                        </div>
-                                        <input name="<?php echo $this->plugin_name;?>[gateway_charge_afterpay]" value="<?php echo $gateway_charge_afterpay;?>" id="<?php echo $this->plugin_name;?>-options_afterpay" type="text" class="form-control type-number" placeholder="Percent" aria-label="gateway_afterpay" aria-describedby="btn_pretext4">
-                                    </div>
-                                </div>
-                                <div class="col-md-2">
-                                    <label for="<?php echo $this->plugin_name;?>-options_zip">Zip Pay</label>
-                                    <div class="input-group mb-2">
-                                        <div class="input-group-prepend">
-                                            <span class="input-group-text" id="btn_pretext5">$</span>
-                                        </div>
-                                        <input name="<?php echo $this->plugin_name;?>[gateway_charge_zip]" value="<?php echo $gateway_charge_zip;?>" id="<?php echo $this->plugin_name;?>-options_zip" type="text" class="form-control type-number" placeholder="Percent" aria-label="gateway_zip" aria-describedby="btn_pretext5">
-                                    </div>
-                                </div>
-                            </div>
+                           
 
                            <!-- <fieldset class="">
                                 <legend class="screen-reader-text"><span><?php /*_e('Paypal', $this->plugin_name);*/?></span></legend>

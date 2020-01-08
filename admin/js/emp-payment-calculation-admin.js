@@ -28,7 +28,7 @@ jQuery(document).ready(function ($) {
     $('#reportrange').val(start.format('MMMM D, YYYY') + ' - ' + end.format('MMMM D, YYYY'));
     $('#reportrange').attr('data-dateRangeStart', start.format('YYYY-MM-DD'));
     $('#reportrange').attr('data-dateRangeEnd', end.format('YYYY-MM-DD'));
-    $('#wcGenerateBtn').attr('disabled', true);
+    $('#wcGenerateBtn').attr('disabled', false);
 
     function cb(start, end, label) {
         $('#reportrange').val(start.format('MMMM D, YYYY') + ' - ' + end.format('MMMM D, YYYY'));
@@ -179,6 +179,8 @@ app.controller('paymentController', function ($scope, $http, filterFilter) {
         console.log(angular.element(document).find('#reportrange').attr('data-dateRangeEnd'));
         $scope.dateRangeStart = angular.element(document).find('#reportrange').attr('data-dateRangeStart');
         $scope.dateRangeEnd = angular.element(document).find('#reportrange').attr('data-dateRangeEnd');
+        angular.element(document).find('#loader-msg').css('display', 'block');
+        angular.element(document).find('#default-msg').css('display', 'none');
 
         $http({
             method: 'POST',
@@ -192,18 +194,10 @@ app.controller('paymentController', function ($scope, $http, filterFilter) {
             //headers : { 'Content-Type': 'application/x-www-form-urlencoded' }
         }).then(function successCallback(response) {
             console.log("Angular HTTP sucess");
-
+            angular.element(document).find('#loader-msg').css('display', 'none');
             var extract_csv = [];
             var j = 0;
             if( response.data.length > 0 ){
-                // angular.forEach(response.data, function (value, key) {
-                //     for( var index in value){
-                //         if( value[index] === 'NSW' ){
-                //             extract_csv.push(response.data[key]);
-                //         }
-                //     }
-                //     j++;
-                // });
 
                 $scope.ordersSummary = response.data;
 
@@ -213,6 +207,7 @@ app.controller('paymentController', function ($scope, $http, filterFilter) {
         }, function errorCallback(response) {
             console.log("Angular HTTP fail");
             console.log(response);
+            angular.element(document).find('#default-msg').css('display', 'block').text('No data available!');
         });
 
     };
@@ -223,18 +218,12 @@ app.controller('paymentController', function ($scope, $http, filterFilter) {
         console.log(ArrOfObj);
         console.log(keys);
         angular.forEach(ArrOfObj, function (value, index) {
-
             // delete value.item[0];
             // this.push(value);
             for( var i = 0; i < keys.length; i++ ){
                 if( value.state == keys[i] ){
                     result.push(value);
                 }
-                // if( value.hasOwnProperty(keys[i])){
-                //     //delete value.keys[i];
-                //     this.push(value);
-                // }
-
             }
         },result);
         return result;
@@ -256,15 +245,7 @@ app.controller('paymentController', function ($scope, $http, filterFilter) {
                     line += value;
                 }
 
-
-
             });
-            // for (var index in array[i]) {
-            //
-            //     if (line != '') line += ','
-            //     line += array[i][index];
-            //
-            // }
 
             str += line + '\r\n';
 
@@ -311,59 +292,6 @@ app.controller('paymentController', function ($scope, $http, filterFilter) {
         charges: "Charges",
         revenue: "Distributor Revenue"
     };
-
-    //test data
-    var headers2 = {
-        model: 'Phone Model', // remove commas to avoid errors
-        chargers: "Chargers",
-        cases: "Cases",
-        earphones: "Earphones"
-    };
-    var itemsNotFormatted = [
-        {
-            model: 'Samsung S7',
-            chargers: '55',
-            cases: '56',
-            earphones: '57',
-            scratched: '2'
-        },
-        {
-            model: 'Pixel XL',
-            chargers: '77',
-            cases: '78',
-            earphones: '79',
-            scratched: '4'
-        },
-        {
-            model: 'iPhone 7',
-            chargers: '88',
-            cases: '89',
-            earphones: '90',
-            scratched: '6'
-        }
-    ];
-
-    var itemsFormatted = [];
-    var i;
-    // for( i = 0; i <= itemsNotFormatted.length; i++ ){
-    //     itemsFormatted.push({
-    //         model: itemsNotFormatted[i].model,
-    //         charges: itemsNotFormatted[i].charges,
-    //         cases: itemsNotFormatted[i].cases,
-    //         earphones: itemsNotFormatted[i].earphones,
-    //     });
-    // }
-    var values = {name: 'misko', gender: 'male'};
-    var log = [];
-
-    angular.forEach(itemsNotFormatted, function(value, key) {
-        delete value.scratched;
-
-        this.push( value );
-
-    }, itemsFormatted);
-
-    console.log(itemsFormatted);
 
     var fileTitle = 'Distributor Revenue'; // or 'my-unique-title'
     $scope.exportJsonToCsv = function(){
