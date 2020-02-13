@@ -76,7 +76,8 @@ class Emp_Payment_Calculation {
 
 		$this->load_dependencies();
 		$this->set_locale();
-		$this->define_admin_hooks();
+
+        $this->define_admin_hooks();
 		$this->define_public_hooks();
 
 
@@ -154,9 +155,11 @@ class Emp_Payment_Calculation {
 	private function define_admin_hooks() {
 
 		$plugin_admin = new Emp_Payment_Calculation_Admin( $this->get_plugin_name(), $this->get_version() );
-
-		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_styles' );
-		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_scripts' );
+        $page = $_GET['page'];
+        if( $page == 'emp-payment-calculation' ){
+            $this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_styles' );
+            $this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_scripts' );
+        }
 
 		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_ajax_scripts' );
 

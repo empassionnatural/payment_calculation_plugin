@@ -16,7 +16,6 @@
 <!-- This file should primarily consist of HTML with a little bit of PHP. -->
 
 
-
 <div class="wrap">
 
     <h2><?php echo esc_html(get_admin_page_title()); ?></h2>
@@ -47,7 +46,7 @@
                                     <button id="wcGenerateBtn" type="button" class="btn btn-primary" ng-click="wcLoadOrders()">Generate</button>
                                 </div>
                                 <div class="form-group col-md-2 pl-0">
-                                    <button type="button" class="btn btn-light ml-2" ng-click="exportJsonToCsv()">Export CSV</button>
+                                    <button type="button" class="btn btn-light ml-2" ng-click="exportJsonToCsv(dateRangeStart, dateRangeEnd)">Export CSV</button>
                                 </div>
                             </form>
 
@@ -76,30 +75,51 @@
                             <table id="orders-data-table" class="table table-striped">
                                 <thead>
                                 <tr>
-                                    <th scope="col" ng-click="sort('order_id')" ng-class="{reverse: reverse}">Order ID</th>
-                                    <th scope="col" ng-click="sort('state')" ng-class="{reverse: reverse}">State</th>
-                                    <th scope="col" ng-click="sort('payment_method')" ng-class="{reverse: reverse}">Payment Method</th>
-                                    <th scope="col" ng-click="sort('total')" ng-class="{reverse: reverse}">Sales</th>
-                                    <th scope="col" ng-click="sort('charges')" ng-class="{reverse: reverse}">Charges</th>
-                                    <th scope="col" ng-click="sort('revenue')" ng-class="{reverse: reverse}">Distributor Revenue</th>
+                                    <th scope="col" ng-click="sort('order_id')" ng-class="{reverse: reverse}">Order ID <span class="sortorder" ng-show="sortKey === 'order_id'" ng-class="{reverse: reverse}"></span></th>
+                                    <th scope="col" ng-click="sort('date_created')" ng-class="{reverse: reverse}">Date <span class="sortorder" ng-show="sortKey === 'date_created'" ng-class="{reverse: reverse}"></span></th>
+                                    <th scope="col" ng-click="sort('state')" ng-class="{reverse: reverse}">State <span class="sortorder" ng-show="sortKey === 'state'" ng-class="{reverse: reverse}"></span></th>
+                                    <th scope="col" ng-click="sort('payment_method')" ng-class="{reverse: reverse}">Gateway <span class="sortorder" ng-show="sortKey === 'payment_method'" ng-class="{reverse: reverse}"></span></th>
+                                    <th scope="col" ng-click="sort('total')" ng-class="{reverse: reverse}">Sales <span class="sortorder" ng-show="sortKey === 'total'" ng-class="{reverse: reverse}"></span></th>
+                                    <th scope="col" ng-click="sort('charges')" ng-class="{reverse: reverse}">Charges <span class="sortorder" ng-show="sortKey === 'charges'" ng-class="{reverse: reverse}"></span></th>
+                                    <th scope="col" ng-click="sort('refunded')" ng-class="{reverse: reverse}">Refunded <span class="sortorder" ng-show="sortKey === 'refunded'" ng-class="{reverse: reverse}"></span></th>
+                                    <th scope="col" ng-click="sort('revenue')" ng-class="{reverse: reverse}">Revenue <span class="sortorder" ng-show="sortKey === 'revenue'" ng-class="{reverse: reverse}"></span></th>
                                 </tr>
                                 </thead>
                                 <tbody>
                                 <tr ng-repeat="order in ordersSummary | orderBy:sortKey:reverse | filter:filterStates():true | filter:searchOrders ">
-                                    <th scope="row">{{order.order_id}}</th>
+                                    <th scope="row"><a href="<?php echo get_site_url() .'/wp-admin/post.php?post={{order.order_id}}&action=edit'; ?>" target="_blank">{{order.order_id}}</a></th>
+                                    <td>{{order.date_created}}</td>
                                     <td>{{order.state}}</td>
                                     <td>{{order.payment_method | uppercase}}</td>
                                     <td>{{order.total}}</td>
                                     <td>{{order.charges}}</td>
+                                    <td style="color: red;"><span ng-if="order.refunded">-</span>{{order.refunded}}</td>
                                     <td>{{order.revenue}}</td>
                                 </tr>
 
                                 </tbody>
                             </table>
+
+                            <div class="container" ng-if="ordersSummary.length > 0">
+                                <div class="row">
+                                    <div class="col"></div>
+                                    <div class="col-3">
+                                        <div ng-if="showStates.length > 0" class="text-right p-3 mb-2 bg-success text-white" style="color:white;">Total Revenue: <span style="font-weight: bold;font-size: 18px;">{{ getTotalByStates | number:2  }}</span></div>
+                                        <div ng-if="showStates.length == 0" class="text-right p-3 mb-2 bg-success text-white" style="color:white;">Total Revenue: <span style="font-weight: bold;font-size: 18px;">{{ getTotal() | number:2  }}</span></div>
+                                    </div>
+                                </div>
+                               <div class="row">
+                                   <div class="col">
+                                       <div class="text-right p-3 mb-2 bg-white text-dark" ><span ng-if="showStates.length > 0">Showing {{filteredOrders.length}} out of</span> {{ordersSummary.length}} order(s)</div>
+                                   </div>
+                               </div>
+
+                            </div>
                             <div class="text-center alert alert-light" role="alert">
                                 <span id="default-msg">Select a date and generate!</span>
-                                <span id="loader-msg">loading...</span>
+                                <span id="loader-msg" style="display: none;">loading...</span>
                             </div>
+
                             <dir-pagination-controls
                                     max-size="5"
                                     direction-links="true"

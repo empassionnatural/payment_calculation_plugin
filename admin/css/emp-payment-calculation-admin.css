@@ -27,3 +27,39 @@
     width: var(--table-width);
     table-layout:fixed;
 }
+
+#orders-data-table thead tr th:hover{
+    cursor: pointer;
+}
+.reverse .sortorder:before{
+    content: "\f140";
+    font: normal 20px/1 dashicons;
+    speak: none;
+    display: inline-block;
+    padding: 0;
+    top: 5px;
+    color: #444;
+    line-height: .5;
+    position: relative;
+    vertical-align: top;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-decoration: none!important;
+    color: #444;
+}
+.sortorder:before{
+    content: "\f142";
+    font: normal 20px/1 dashicons;
+    speak: none;
+    display: inline-block;
+    padding: 0;
+    top: 5px;
+    color: #444;
+    line-height: .5;
+    position: relative;
+    vertical-align: top;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-decoration: none!important;
+    color: #444;
+}

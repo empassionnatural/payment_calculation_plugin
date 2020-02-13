@@ -78,12 +78,13 @@ class Emp_Payment_Calculation_Admin {
 		 * class.
 		 */
 
-		wp_enqueue_style( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'css/emp-payment-calculation-admin.css', array(), '2.1.0', 'all' );
+		wp_enqueue_style( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'css/emp-payment-calculation-admin.css', array(), '2.1.1', 'all' );
 
 		wp_enqueue_style( 'bootstrap-css-v4', plugin_dir_url( __FILE__ ) . 'assets/bootstrap/css/bootstrap.css', array(), $this->version, 'all' );
 
-		wp_enqueue_style( 'datepicker-css', 'https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css', array(), $this->version, 'all' );
+		wp_enqueue_style( 'datepicker', 'https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css', array(), $this->version, 'all' );
 
+        wp_enqueue_style('fontawesome', plugin_dir_url( __FILE__ ) . 'assets/fontawesome/all.min.css', array() );
 
 	}
 
@@ -94,16 +95,35 @@ class Emp_Payment_Calculation_Admin {
 	 */
 	public function enqueue_ajax_scripts(){
 
-		wp_enqueue_script( 'jquery' );
-		wp_enqueue_script( 'empdev-angular-js', 'https://ajax.googleapis.com/ajax/libs/angularjs/1.7.8/angular.min.js' );
+        wp_enqueue_script( 'jquery' );
+        //wp_enqueue_script( 'empdev-angular-js', 'https://ajax.googleapis.com/ajax/libs/angularjs/1.7.8/angular.min.js' );
+
+
+        wp_enqueue_script( 'empdev-angular-js', 'https://ajax.googleapis.com/ajax/libs/angularjs/1.7.6/angular.min.js' );
+
+
+        wp_enqueue_script( 'empdev-animate-js', 'https://ajax.googleapis.com/ajax/libs/angularjs/1.7.6/angular-animate.min.js' );
+
+        wp_enqueue_script( 'empdev-aria-js', 'https://ajax.googleapis.com/ajax/libs/angularjs/1.7.6/angular-aria.min.js' );
+
+        wp_enqueue_script( 'empdev-messages-js', 'https://ajax.googleapis.com/ajax/libs/angularjs/1.7.6/angular-messages.min.js' );
+
+
 
         wp_enqueue_script( 'empdev-pagination-js', plugin_dir_url( __FILE__ ) . 'assets/dirPagination.js' );
 
-		wp_enqueue_script( 'empdev-moment-js', 'https://cdn.jsdelivr.net/momentjs/latest/moment.min.js' );
+        wp_enqueue_script( 'empdev-moment-js', 'https://cdn.jsdelivr.net/momentjs/latest/moment.min.js' );
 
-		wp_enqueue_script( 'empdev-datepicker-js', 'https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js' );
+        wp_enqueue_script( 'empdev-datepicker-js', 'https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js' );
+
+        wp_enqueue_script( 'empdev-dateconfig-js', plugin_dir_url( __FILE__ ) . 'js/emp-daterange-config.js', array('jquery'), '1.0.1', false );
+        wp_enqueue_script( 'empdev-angular-material-js', 'https://ajax.googleapis.com/ajax/libs/angular_material/1.1.12/angular-material.min.js' );
+
+
         //3.1.9
-		wp_enqueue_script( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'js/emp-payment-calculation-admin.js', array( 'jquery', 'empdev-angular-js', 'empdev-pagination-js', 'empdev-moment-js', 'empdev-datepicker-js' ), '16.6.2', false );
+        wp_enqueue_script( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'js/emp-payment-calculation-admin.js', array( 'jquery', 'empdev-angular-js', 'empdev-animate-js', 'empdev-aria-js', 'empdev-messages-js', 'empdev-pagination-js', 'empdev-dateconfig-js', 'empdev-moment-js', 'empdev-datepicker-js', 'empdev-angular-material-js' ), '16.9.3', false );
+
+
 
 		//		$dataToBePassed = array(
 //			'home'            => $this->plugin_name,
@@ -216,13 +236,15 @@ class Emp_Payment_Calculation_Admin {
 		}
 		else{
 			$args = array(
-	//			'status' => 'completed',
+                'type' => 'shop_order',
+//	    		'status' => array('completed', 'processing'),
 	//			'limit'=> 10,
 //				'date_paid' => '2018-03-14...2018-04-14',
 	//			'billing_city' => (isset($billing_city)) ? $billing_city : 'QLD',
 				'order' => 'ASC',
 				'limit'=> -1,
-				'date_paid' => $date_start.'...'.$date_end,
+				//'date_created' => '2020-01-01...2020-01-07',
+				'date_created' => $date_start.'...'.$date_end,
 
 			);
 
@@ -235,15 +257,29 @@ class Emp_Payment_Calculation_Admin {
 
                 foreach ( $orders as $order ) {
                     $payment_method = $order->get_payment_method();
-                    $revenue = $this->empdev_payment_processor_deduction( $order->get_total(), $payment_method );
+
+                    if( $order->get_total_refunded() ){
+                        $revenue = (float) $order->get_total() - (float) $order->get_total_refunded();
+
+                    }
+                    else {
+                        $revenue = $order->get_total();
+                    }
+
+
+                    $total_revenue = ($revenue <= 0 ) ? 0 : $this->empdev_payment_processor_deduction( $revenue, $payment_method );
+
+                    //$total_revenue = ( $order->get_total() - $order->total_refunded() ) - $payment_charges;
                     $orders_summary[] = array(
                         'order_id'        => $order->get_id(),
+                        'date_created'       => wc_format_datetime( $order->get_date_paid() ),
                         'payment_method'  => $payment_method,
                         'state'           => $order->get_address( 'billing' )['state'],
-                        'total'           => (float) $order->get_total(),
-                        'charges'         => (float) $order->get_total() - $revenue,
-                        'revenue'         => (float) $revenue,
-//                        'date_paid'       => wc_format_datetime( $order->get_date_paid() ),
+                        'total'           => (float) $order->get_total(), //sales
+                        'charges'         => number_format( (float) $revenue - $total_revenue, 2, '.', ''),
+                        'refunded'        => (float) $order->get_total_refunded(),
+                        'revenue'         => (float) $total_revenue,
+
 //                        'billing_address' => $order->get_address( 'billing' ),
 //                        'discount_total'  => $order->get_total_discount(),
 //                        'sub_total'       => $order->get_subtotal(),
@@ -288,7 +324,7 @@ class Emp_Payment_Calculation_Admin {
 	 *
 	 * @return int $revenue Sales income for a state distributor in each order.
 	 */
-	private function empdev_payment_processor_deduction($total_amount, $payment_gateway ){
+	private function empdev_payment_processor_deduction( $total_amount, $payment_gateway ){
 		//$gateway = 'paypal';
         $options = get_option($this->plugin_name);
         $gateway_charge_paypal = $options['gateway_charge_paypal'];
